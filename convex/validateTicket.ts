@@ -1,5 +1,4 @@
-// convex/validateTicket.ts
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const validateTicket = mutation({
@@ -10,23 +9,14 @@ export const validateTicket = mutation({
   handler: async (ctx, { ticketId, eventId }) => {
     const ticket = await ctx.db
       .query("tickets")
-      .withIndex("by_ticketId", (q) => q.eq("ticketId", ticketId))
+      .filter((q) => q.eq(q.field("ticketId"), ticketId))
       .unique();
 
-    if (!ticket) {
-      return { status: "invalid", message: "Ticket not found." };
-    }
-
-    if (ticket.used) {
-      return { status: "used", message: "Ticket already used." };
-    }
-
-    if (ticket.eventId !== eventId) {
-      return { status: "invalid", message: "Wrong event." };
-    }
+    if (!ticket) return { status: "invalid" };
+    if (ticket.eventId !== eventId) return { status: "wrong_event" };
+    if (ticket.used) return { status: "used" };
 
     await ctx.db.patch(ticket._id, { used: true });
-
-    return { status: "valid", message: "Ticket validated successfully." };
+    return { status: "valid" };
   },
 });

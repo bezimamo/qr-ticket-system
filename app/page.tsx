@@ -1,52 +1,58 @@
 "use client";
-
+import { Html5QrcodeScanner } from "html5-qrcode";
+import { useEffect, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState } from "react";
-import QrScanner from "@/components/QrScanner";
 
-export default function Home() {
+export default function ScanPage() {
+  const [result, setResult] = useState("");
   const validateTicket = useMutation(api.validateTicket.validateTicket);
-  const [message, setMessage] = useState<string | null>(null);
-  const [status, setStatus] = useState<"success" | "error" | null>(null);
 
-  const handleScan = async (ticketId: string) => {
-    try {
+  useEffect(() => {
+    const scanner = new Html5QrcodeScanner(
+      "qr-reader",
+      { fps: 10, qrbox: 250 },
+      false
+    );
+
+    // Unified handler for both camera and file scan success
+    const handleScanSuccess = async (decodedText: string) => {
+      console.log("Decoded text: ", decodedText);
+
       const response = await validateTicket({
-        ticketId,
-        eventId: "event123", // Replace with your actual event ID
+        ticketId: decodedText,
+        eventId: "EVT001",
       });
 
-      setMessage(response.message);
-      setStatus(response.status === "valid" ? "success" : "error");
-    } catch (error: any) {
-      console.error("Validation error:", error);
-      setMessage("An error occurred while validating the ticket.");
-      setStatus("error");
-    }
-  };
+      if (response.status === "valid") setResult("✅ Ticket is valid");
+      else if (response.status === "used") setResult("⚠️ Ticket already used");
+      else if (response.status === "wrong_event") setResult("❌ Wrong event");
+      else setResult("❌ Invalid ticket");
+
+      // Optionally stop scanner after 1 successful scan
+      // await scanner.clear();  // you can comment this out for continuous scan
+    };
+
+    scanner.render(
+      handleScanSuccess,
+      (error) => {
+        console.warn(`QR scan error: ${error}`);
+      }
+    );
+
+    return () => {
+      scanner.clear();
+    };
+  }, [validateTicket]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 py-10 bg-gradient-to-br from-gray-100 to-gray-300">
-      <h1 className="text-4xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <span role="img" aria-label="ticket">🎟️</span> QR Ticket Scanner
-      </h1>
-
-      <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-6 border border-gray-300">
-        <QrScanner onScan={handleScan} />
-      </div>
-
-      {message && (
-        <div
-          className={`p-3 rounded-md text-center font-medium w-full max-w-md transition-all duration-300 ${
-            status === "success"
-              ? "text-black bg-green-100 border border-green-300"
-              : "text-red-700 bg-red-100 border border-red-300"
-          }`}
-        >
-          {message}
-        </div>
-      )}
-    </main>
+    <div className="p-8 min-h-screen bg-blue-400 flex flex-col items-center justify-center">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">🎟️ Scan Ticket</h1>
+      <div
+        id="qr-reader"
+        className="w-full max-w-sm border-2 border-gray-300 rounded-lg overflow-hidden"
+      />
+      <p className="mt-6 text-xl text-gray-700 font-medium">{result}</p>
+    </div>
   );
 }
