@@ -18,20 +18,26 @@ export default function ScanPage() {
     // Unified handler for both camera and file scan success
     const handleScanSuccess = async (decodedText: string) => {
       console.log("Decoded text: ", decodedText);
-
+    
+      // Expecting format: "ticket123:event456"
+      const [ticketId, eventId] = decodedText.split(":");
+    
+      if (!ticketId || !eventId) {
+        setResult("❌ Invalid QR code format");
+        return;
+      }
+    
       const response = await validateTicket({
-        ticketId: decodedText,
-        eventId: "EVT001",
+        ticketId,
+        eventId,
       });
-
+    
       if (response.status === "valid") setResult("✅ Ticket is valid");
       else if (response.status === "used") setResult("⚠️ Ticket already used");
       else if (response.status === "wrong_event") setResult("❌ Wrong event");
       else setResult("❌ Invalid ticket");
-
-      // Optionally stop scanner after 1 successful scan
-      // await scanner.clear();  // you can comment this out for continuous scan
     };
+    
 
     scanner.render(
       handleScanSuccess,
