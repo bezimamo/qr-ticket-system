@@ -6,7 +6,6 @@ let Html5QrcodeScanner: any;
 if (typeof window !== "undefined") {
   Html5QrcodeScanner = require("html5-qrcode").Html5QrcodeScanner;
 }
-
 export default function QrScanner({ onScan }: { onScan: (result: string) => void }) {
   useEffect(() => {
     if (!Html5QrcodeScanner) return;
