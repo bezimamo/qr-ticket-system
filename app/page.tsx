@@ -3,6 +3,10 @@ import { Html5QrcodeScanner } from "html5-qrcode";
 import { useEffect, useState, useRef } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Terminal } from "lucide-react"; // Icon for the alert
 
 export default function ScanPage() {
   const [result, setResult] = useState("");
@@ -75,31 +79,47 @@ export default function ScanPage() {
     };
   }, [validateTicket]);
 
-  // Color based on status
-  const colorClass = {
-    valid: "text-green-600",
-    used: "text-yellow-600",
-    wrong_event: "text-red-600",
-    invalid_format: "text-red-600",
-  }[status] || "text-gray-700";
+  // Optional: color classes for customization
+  const alertColors = {
+    valid: "border-green-500 bg-green-50 text-green-700",
+    used: "border-yellow-500 bg-yellow-50 text-yellow-700",
+    wrong_event: "border-red-500 bg-red-50 text-red-700",
+    invalid_format: "border-red-500 bg-red-50 text-red-700",
+  };
+
+  const currentAlertColor = alertColors[status as keyof typeof alertColors] || "";
 
   return (
-    <div className="p-8 min-h-screen bg-blue-400 flex flex-col items-center justify-center">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">🎟️ Scan Ticket</h1>
-      <div
-        id="qr-reader"
-        className="w-full max-w-sm border-2 border-gray-300 rounded-lg overflow-hidden"
-      />
-      <p className={`mt-6 text-xl font-medium ${colorClass}`}>{result}</p>
+    <div className="p-8 min-h-screen bg-blue-50 flex flex-col items-center justify-center">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-center text-2xl">🎟️ Scan Ticket</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div
+            id="qr-reader"
+            className="w-full border border-gray-300 rounded-md overflow-hidden"
+          />
 
-      {!scanning && (
-        <button
-          onClick={startScanner}
-          className="mt-4 bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold shadow hover:bg-blue-100"
-        >
-          🔁 Scan Again
-        </button>
-      )}
+          {result && (
+            <Alert className={`mt-6 ${currentAlertColor}`} variant={
+              status === "valid" ? "default" : "destructive"
+            }>
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Result</AlertTitle>
+              <AlertDescription className="text-lg font-semibold">
+                {result}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!scanning && (
+            <Button onClick={startScanner} className="mt-6 w-full">
+              🔁 Scan Again
+            </Button>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
